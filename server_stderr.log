@@ -1,0 +1,19 @@
+[server] server boot
+[server] server boot
+[server] now() called
+[server] weather(city='Tel Aviv') called
+[server] ask_llm() called
+[server] server boot
+[server] now() called
+[server] weather(city='Tel Aviv') called
+[server] ask_llm() called
+[server] server boot
+[server] server boot
+[server] now() called
+[server] weather(city='Tel Aviv') called
+[server] ask_llm() called
+[server] server boot
+[server] server boot
+[server] now() called
+[server] weather(city='Tel Aviv') called
+[server] ask_llm() called

@@ -1,78 +1,143 @@
 <!doctype html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MCP Lab UI</title>
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 24px; }
-    h1 { margin-bottom: 8px; }
-    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin: 12px 0; }
-    label { display:block; margin: 6px 0 4px; }
-    input, textarea, button { font-size: 16px; padding: 8px; }
-    pre { background: #111; color: #eee; padding: 12px; border-radius: 8px; overflow:auto; }
-    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    * { box-sizing: border-box; }
+    body { 
+      font-family: system-ui, Arial, sans-serif; 
+      margin: 24px; 
+      background: #f5f5f5;
+    }
+    h1 { margin-bottom: 8px; color: #333; }
+    .status { 
+      padding: 12px; 
+      margin: 12px 0; 
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    .status.ok { background: #d4edda; color: #155724; }
+    .status.error { background: #f8d7da; color: #721c24; }
+    .card { 
+      background: white;
+      border: 1px solid #ddd; 
+      border-radius: 12px; 
+      padding: 16px; 
+      margin: 12px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    label { display:block; margin: 6px 0 4px; font-weight: bold; }
+    input, textarea { 
+      font-size: 16px; 
+      padding: 8px; 
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+    button { 
+      font-size: 16px; 
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 8px 0;
+    }
+    button:hover { background: #0056b3; }
+    button:active { transform: scale(0.98); }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    pre { 
+      background: #1e1e1e; 
+      color: #d4d4d4; 
+      padding: 12px; 
+      border-radius: 8px; 
+      overflow: auto;
+      max-height: 400px;
+      font-size: 14px;
+      direction: ltr;
+      text-align: left;
+    }
+    .loading { 
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
-  <h1>MCP Lab — Frontend UI</h1>
-  <p>Call tools on your local Flask server.</p>
+  <h1>🛠️ MCP Lab - ממשק ניהול</h1>
+  <p>קריאה לכלים על שרת Flask מקומי</p>
+
+  <div id="serverStatus" class="status">בודק חיבור לשרת...</div>
 
   <div class="card">
-    <h2>Tools</h2>
-    <button id="btnLoadTools">Load /tools</button>
-    <pre id="toolsOut">(no data)</pre>
+    <h2>📋 רשימת כלים</h2>
+    <button id="btnLoadTools">טען כלים זמינים</button>
+    <pre id="toolsOut">(לחץ על הכפתור)</pre>
   </div>
 
   <div class="card">
-    <h2>now</h2>
-    <button id="btnNow">Call now</button>
-    <pre id="nowOut">(no data)</pre>
+    <h2>🕐 זמן נוכחי (now)</h2>
+    <button id="btnNow">קבל זמן UTC</button>
+    <pre id="nowOut">(לחץ על הכפתור)</pre>
   </div>
 
   <div class="card">
-    <h2>weather</h2>
-    <label for="city">City</label>
-    <input id="city" placeholder="Tel Aviv" value="Tel Aviv" />
-    <div class="row">
-      <button id="btnWeather">Call weather</button>
-    </div>
-    <pre id="weatherOut">(no data)</pre>
+    <h2>🌤️ מזג אוויר (weather)</h2>
+    <label for="city">עיר</label>
+    <input id="city" placeholder="תל אביב" value="תל אביב" />
+    <button id="btnWeather">קבל מזג אוויר</button>
+    <pre id="weatherOut">(לחץ על הכפתור)</pre>
   </div>
 
   <div class="card">
-    <h2>ask_llm</h2>
-    <label for="prompt">Prompt</label>
-    <textarea id="prompt" rows="3">Explain MCP in one sentence.</textarea>
-    <label for="model">Model (optional)</label>
-    <input id="model" placeholder="llama3.2:3b" />
-    <div class="row">
-      <button id="btnAsk">Call ask_llm</button>
-    </div>
-    <pre id="askOut">(no data)</pre>
+    <h2>💻 מידע מערכת (system_info)</h2>
+    <button id="btnSystem">קבל מידע מערכת</button>
+    <pre id="systemOut">(לחץ על הכפתור)</pre>
   </div>
 
-  <!-- Put script at the end so DOM exists. Alternatively add 'defer' on <script>. -->
   <script>
     const BASE = 'http://127.0.0.1:5000';
-
+    
+    // אלמנטים
     const els = {
+      serverStatus: document.getElementById('serverStatus'),
       btnLoadTools: document.getElementById('btnLoadTools'),
       btnNow: document.getElementById('btnNow'),
       btnWeather: document.getElementById('btnWeather'),
-      btnAsk: document.getElementById('btnAsk'),
+      btnSystem: document.getElementById('btnSystem'),
       toolsOut: document.getElementById('toolsOut'),
       nowOut: document.getElementById('nowOut'),
       weatherOut: document.getElementById('weatherOut'),
-      askOut: document.getElementById('askOut'),
-      city: document.getElementById('city'),
-      prompt: document.getElementById('prompt'),
-      model: document.getElementById('model')
+      systemOut: document.getElementById('systemOut'),
+      city: document.getElementById('city')
     };
+
+    // פונקציות עזר
+    function setLoading(btn, loading) {
+      btn.disabled = loading;
+      if (loading) {
+        btn.dataset.originalText = btn.textContent;
+        btn.innerHTML = '<span class="loading"></span>';
+      } else {
+        btn.textContent = btn.dataset.originalText || btn.textContent;
+      }
+    }
 
     async function getJSON(url) {
       const r = await fetch(url);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
       return r.json();
     }
 
@@ -84,42 +149,92 @@
       });
       if (!r.ok) {
         const text = await r.text();
-        throw new Error('HTTP ' + r.status + ': ' + text);
+        throw new Error(`HTTP ${r.status}: ${text}`);
       }
       return r.json();
     }
 
+    // בדיקת חיבור לשרת
+    async function checkServer() {
+      try {
+        await getJSON(`${BASE}/`);
+        els.serverStatus.className = 'status ok';
+        els.serverStatus.textContent = '✅ השרת רץ ומחובר';
+      } catch (err) {
+        els.serverStatus.className = 'status error';
+        els.serverStatus.textContent = `❌ שגיאה: ${err.message}. ודא ש- python app_simple.py רץ!`;
+        console.error('Server check failed:', err);
+      }
+    }
+
+    // טוען כלים
     els.btnLoadTools.addEventListener('click', async () => {
+      setLoading(els.btnLoadTools, true);
       try {
         const data = await getJSON(`${BASE}/tools`);
         els.toolsOut.textContent = JSON.stringify(data, null, 2);
-      } catch (err) { els.toolsOut.textContent = String(err); }
+      } catch (err) { 
+        els.toolsOut.textContent = `שגיאה: ${err.message}`;
+        console.error(err);
+      } finally {
+        setLoading(els.btnLoadTools, false);
+      }
     });
 
+    // קורא ל-now
     els.btnNow.addEventListener('click', async () => {
+      setLoading(els.btnNow, true);
       try {
-        const data = await postJSON(`${BASE}/call`, { name: 'now', arguments: {} });
+        const data = await postJSON(`${BASE}/call`, { 
+          name: 'now', 
+          arguments: {} 
+        });
         els.nowOut.textContent = JSON.stringify(data, null, 2);
-      } catch (err) { els.nowOut.textContent = String(err); }
+      } catch (err) { 
+        els.nowOut.textContent = `שגיאה: ${err.message}`;
+        console.error(err);
+      } finally {
+        setLoading(els.btnNow, false);
+      }
     });
 
+    // קורא ל-weather
     els.btnWeather.addEventListener('click', async () => {
+      setLoading(els.btnWeather, true);
       try {
-        const city = (els.city.value || 'Tel Aviv').trim();
-        const data = await postJSON(`${BASE}/call`, { name: 'weather', arguments: { city } });
+        const city = (els.city.value || 'תל אביב').trim();
+        const data = await postJSON(`${BASE}/call`, { 
+          name: 'weather', 
+          arguments: { city } 
+        });
         els.weatherOut.textContent = JSON.stringify(data, null, 2);
-      } catch (err) { els.weatherOut.textContent = String(err); }
+      } catch (err) { 
+        els.weatherOut.textContent = `שגיאה: ${err.message}`;
+        console.error(err);
+      } finally {
+        setLoading(els.btnWeather, false);
+      }
     });
 
-    els.btnAsk.addEventListener('click', async () => {
+    // קורא ל-system_info (FIXED - ללא server parameter)
+    els.btnSystem.addEventListener('click', async () => {
+      setLoading(els.btnSystem, true);
       try {
-        const prompt = els.prompt.value.trim();
-        const model = els.model.value.trim();
-        const args = model ? { prompt, model } : { prompt };
-        const data = await postJSON(`${BASE}/call`, { name: 'ask_llm', arguments: args });
-        els.askOut.textContent = JSON.stringify(data, null, 2);
-      } catch (err) { els.askOut.textContent = String(err); }
+        const data = await postJSON(`${BASE}/call`, { 
+          name: 'system_info', 
+          arguments: {}
+        });
+        els.systemOut.textContent = JSON.stringify(data, null, 2);
+      } catch (err) { 
+        els.systemOut.textContent = `שגיאה: ${err.message}`;
+        console.error(err);
+      } finally {
+        setLoading(els.btnSystem, false);
+      }
     });
+
+    // בדוק שרת בטעינה
+    checkServer();
   </script>
 </body>
 </html>
